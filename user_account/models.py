@@ -1,18 +1,60 @@
 from django.utils import timezone
 import uuid
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 
-class User(models.Model):
-    email = models.EmailField(max_length=500, blank=True, null=True)
-    name = models.CharField(max_length=200, blank=True, null=True)
-    phone = models.IntegerField(blank=True, null=True)
-    password = models.CharField(max_length=50)
-    created = models.DateTimeField(default=timezone.now)
+class UserManager(BaseUserManager):
+    def create_user(self, email, username = None, password = None):
+        #Validate with email
+        if not email:
+            raise ValueError("Email is required")
+        
+        user = self.model(
+            email = self.normalize_email(email),
+            username = username
+        )
+        
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
     
+    def create_superuser(self, email, username, password=None):
+        user = self.create_user(
+            email=email,
+            username=username,
+            password=password
+        )
+        user.is_admin = True
+        user.is_staff = True
+        user.is_superuser = True
+        user.save(using=self.db)
+        return user
+    
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(max_length=500, blank=True, null=True, unique=True)
+    username = models.CharField(max_length=200, blank=True, null=True)
+    phone = models.IntegerField(blank=True, null=True)
+    created = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    is_superuser = models.BooleanField(default=False)
+    
+    objects = UserManager()
+    
+    
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
     
     
     def __str__(self):
-        return self.name
+        return self.username
+    #functions to permit admin
+    def has_perm(self, perm, obj = None):
+        return True
+    
+    def has_module_perms(self, app_label):
+        return True
 
 class Category(models.Model):
     title = models.CharField(max_length=250, blank=True, null=True)

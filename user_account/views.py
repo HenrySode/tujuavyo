@@ -1,15 +1,22 @@
-from tokenize import Token
-from django.shortcuts import render
+
 from requests import Response
 from rest_framework import generics, status
 from . models import User, Category, Expert, Message
-from .serializers import UserSerilizer, LoginSerializer,  CategorySerializer, ExpertSerializer, MessageSerializer
+from .serializers import UserSerializer, LoginSerializer,  CategorySerializer, ExpertSerializer, MessageSerializer
 from rest_framework.views import APIView 
+
+
+from rest_framework import generics, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+
 
 #User API login and registration
 class UserListCreate(generics.ListCreateAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerilizer
+    serializer_class = UserSerializer
     
     def delete(self, request, *args, **kwargs):
         object = User.objects.all()
@@ -19,26 +26,9 @@ class UserListCreate(generics.ListCreateAPIView):
     
 class UserRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
-    serializer_class = UserSerilizer
+    serializer_class = UserSerializer
     lookup_field = "pk"
 
-class LoginView(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = LoginSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            password = serializer.validated_data['password']
-            
-            #User Authentication
-            # user = authenticate(request, email=email, password=password)
-            # if user:
-            #     token, _ = Token.objects.get_or_create(user=user)
-            #     return Response({'token': token.key}, status=status.HTTP_200_OK)
-            # else:
-            #     return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
-            return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
     
 #CRUD Category API
 class CategoryListCreate(generics.ListCreateAPIView):
@@ -79,3 +69,23 @@ class MessageRetrieveUpdateDestroy(generics.ListCreateAPIView):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
     lookup_field = 'pk'
+    
+class LoginApiView(generics.GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = LoginSerializer
+    
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+        serializer_data = UserSerializer(user).data
+        token = RefreshToken.for_user(user)
+        data = {
+            "refresh":str(token),
+            "access":str(token.access_token),
+            "user": {
+                'is_admin': user.is_admin,
+                'data':serializer_data
+            }
+        }
+        return Response(data, status=status.HTTP_200_OK)

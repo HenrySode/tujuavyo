@@ -39,6 +39,9 @@ class QuestionListCreate(generics.ListCreateAPIView):
         object = Question.objects.all()
         object.delete()
         return Response(status = status.HTTP_204_NO_CONTENT)
+    
+
+
 
 
 

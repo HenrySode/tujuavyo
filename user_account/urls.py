@@ -5,7 +5,7 @@ urlpatterns = [
     #User path
     path('users/', views.UserListCreate.as_view(), name='user-create'),
     path('users/<int:pk>', views.UserRetrieveUpdateDestroy.as_view(), name='user-detail'),
-    path('login/', views.LoginView.as_view(), name='login'),
+    path('login/', views.LoginApiView.as_view(), name='login'),
     
     #Category path
     path('categories/', views.CategoryListCreate.as_view(), name='category-create'),
